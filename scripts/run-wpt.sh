@@ -43,7 +43,10 @@ echo "[run-wpt] starting WPT server"
 WPT_PID=$!
 
 echo "[run-wpt] starting Obscura CDP server on port $CDP_PORT"
-"$OBSCURA_BIN" serve --port "$CDP_PORT" >"$RESULTS_DIR/obscura-serve.log" 2>&1 &
+# The WPT server is reached as web-platform.test, which resolves to 127.0.0.1.
+# Obscura blocks loopback and private addresses by default (the SSRF gate), so
+# --allow-private-network is required or every navigation is refused.
+"$OBSCURA_BIN" serve --port "$CDP_PORT" --allow-private-network >"$RESULTS_DIR/obscura-serve.log" 2>&1 &
 OBSCURA_PID=$!
 
 # Wait for both servers, up to ~60s.

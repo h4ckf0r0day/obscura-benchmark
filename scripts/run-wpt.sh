@@ -96,9 +96,15 @@ RESULTS_JSON="$RESULTS_DIR/wpt-$STAMP.json"
 TRIAGE_MD="$RESULTS_DIR/triage.md"
 
 echo "[run-wpt] running tests"
-# Capture JSON for triage and machine use. The runner also prints a human summary
-# to stderr, which flows straight to the terminal.
-"$RUNNER" --json "$@" >"$RESULTS_JSON"
+# Capture JSON for triage and machine use. The runner exits non-zero whenever any
+# subtest fails, which is the normal case for a partial-conformance engine, so do
+# not let `set -e` abort the run before triage gets to summarize it. Only a
+# missing or empty JSON file is a real failure.
+"$RUNNER" --json "$@" >"$RESULTS_JSON" || true
+if [ ! -s "$RESULTS_JSON" ]; then
+  echo "[run-wpt] error: runner produced no output. see $RESULTS_DIR/obscura-serve.log" >&2
+  exit 1
+fi
 
 echo "[run-wpt] generating triage report"
 "$TRIAGE" <"$RESULTS_JSON" >"$TRIAGE_MD"

@@ -1,0 +1,19 @@
+# build output
+/target
+
+# the WPT checkout is large and reproducible from setup-wpt.sh
+/wpt
+
+# generated run artifacts
+/results
+
+# logs
+*.log
+
+# editor noise
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+.DS_Store

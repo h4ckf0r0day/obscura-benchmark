@@ -8,6 +8,7 @@
 //! something to chew on even when a file times out.
 
 mod cdp;
+mod fetch;
 mod manifest;
 mod report;
 mod capture;
@@ -28,6 +29,20 @@ use report::{print_results, summarize, FileResult};
 struct Args {
     /// Substring filter on the test path.
     filter: Option<String>,
+
+    /// Execution backend. "fetch" (default) runs one `obscura fetch` process per
+    /// test and is reliable: it loads external scripts and runs the harness.
+    /// "cdp" drives a running `obscura serve` over CDP (does not currently run
+    /// external scripts, kept for engine debugging).
+    #[arg(long, default_value = "fetch")]
+    backend: String,
+    /// Path to the obscura binary used by the fetch backend.
+    #[arg(long, default_value = "obscura")]
+    obscura_bin: String,
+    /// Seconds to let each page settle so the harness can finish (fetch backend,
+    /// passed as `obscura fetch --wait`).
+    #[arg(long, default_value_t = 2)]
+    wait_secs: u64,
 
     /// Host the Obscura CDP endpoint listens on.
     #[arg(long, default_value = "127.0.0.1")]
@@ -83,10 +98,17 @@ struct Args {
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
+    let use_fetch = args.backend.eq_ignore_ascii_case("fetch");
 
-    let ws_url = match &args.ws_url {
-        Some(u) => u.clone(),
-        None => cdp::discover_ws_url(&args.browser_host, args.browser_port).await?,
+    // The CDP backend needs the browser WebSocket; the fetch backend spawns its
+    // own processes and needs no running server.
+    let ws_url = if use_fetch {
+        String::new()
+    } else {
+        match &args.ws_url {
+            Some(u) => u.clone(),
+            None => cdp::discover_ws_url(&args.browser_host, args.browser_port).await?,
+        }
     };
 
     // Build the work list. An explicit --url runs exactly as given (any
@@ -116,11 +138,20 @@ async fn main() -> Result<()> {
     }
 
     let concurrency = args.concurrency.max(1);
-    eprintln!(
-        "running {} file(s) with {} worker(s) against {ws_url}",
-        tests.len(),
-        concurrency
-    );
+    if use_fetch {
+        eprintln!(
+            "running {} file(s) with {} worker(s) via `{} fetch`",
+            tests.len(),
+            concurrency,
+            args.obscura_bin
+        );
+    } else {
+        eprintln!(
+            "running {} file(s) with {} worker(s) against {ws_url}",
+            tests.len(),
+            concurrency
+        );
+    }
 
     // Round-robin the tests into one bucket per worker so each worker gets a
     // roughly even mix regardless of how the manifest is ordered.
@@ -131,8 +162,11 @@ async fn main() -> Result<()> {
 
     let cfg = WorkerCfg {
         ws_url,
+        obscura_bin: args.obscura_bin.clone(),
         test_timeout: Duration::from_millis(args.test_timeout_ms),
         poll_interval: Duration::from_millis(args.poll_interval_ms),
+        wait_secs: args.wait_secs,
+        use_fetch,
         verbose: !args.summary && !args.json,
     };
 
@@ -167,8 +201,11 @@ async fn main() -> Result<()> {
 #[derive(Clone)]
 struct WorkerCfg {
     ws_url: String,
+    obscura_bin: String,
     test_timeout: Duration,
     poll_interval: Duration,
+    wait_secs: u64,
+    use_fetch: bool,
     verbose: bool,
 }
 
@@ -176,6 +213,18 @@ struct WorkerCfg {
 /// connection dies mid-bucket we reconnect once before the next test so a single
 /// crash does not lose the rest of the bucket.
 async fn run_bucket(cfg: WorkerCfg, bucket: Vec<TestCase>) -> Vec<FileResult> {
+    if cfg.use_fetch {
+        let mut results = Vec::with_capacity(bucket.len());
+        for tc in &bucket {
+            let result = fetch::run_fetch(&cfg.obscura_bin, tc, cfg.test_timeout, cfg.wait_secs).await;
+            if cfg.verbose {
+                println!("{}", result.line());
+            }
+            results.push(result);
+        }
+        return results;
+    }
+
     let mut results = Vec::with_capacity(bucket.len());
     let mut conn = Cdp::connect(&cfg.ws_url).await.ok();
 

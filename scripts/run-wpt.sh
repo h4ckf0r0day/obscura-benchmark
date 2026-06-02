@@ -1,21 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Run a WPT pass against Obscura over CDP.
+# Run a WPT pass against Obscura.
 #
-# Boots the WPT server and the Obscura CDP server, waits for both to come up,
-# builds the runner, then runs wpt-runner and pipes its JSON through triage.
-# Any extra args are forwarded to wpt-runner (for example a --filter).
+# Boots the WPT server, builds the runner, then runs wpt-runner (fetch backend)
+# and pipes its JSON through triage. The fetch backend spawns one `obscura fetch`
+# per test, so no `obscura serve` is needed. Any extra args are forwarded to
+# wpt-runner (for example a path filter or --concurrency).
+#
+# Env:
+#   OBSCURA_BIN   path to the obscura binary (default: obscura on PATH)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 OBSCURA_BIN="${OBSCURA_BIN:-obscura}"
-CDP_PORT="${CDP_PORT:-9222}"
 WPT_DIR="$SCRIPT_DIR/wpt"
 RESULTS_DIR="$SCRIPT_DIR/results"
 
 WPT_URL="http://web-platform.test:8000/"
-CDP_VERSION_URL="http://127.0.0.1:$CDP_PORT/json/version"
 
 mkdir -p "$RESULTS_DIR"
 
@@ -25,15 +27,12 @@ if [ ! -d "$WPT_DIR" ]; then
 fi
 
 WPT_PID=""
-OBSCURA_PID=""
-
 cleanup() {
-  echo "[run-wpt] shutting down background servers"
-  if [ -n "$OBSCURA_PID" ] && kill -0 "$OBSCURA_PID" 2>/dev/null; then
-    kill "$OBSCURA_PID" 2>/dev/null || true
-  fi
+  echo "[run-wpt] shutting down WPT server"
   if [ -n "$WPT_PID" ] && kill -0 "$WPT_PID" 2>/dev/null; then
+    # ./wpt serve spawns child processes per port; kill the whole group.
     kill "$WPT_PID" 2>/dev/null || true
+    pkill -P "$WPT_PID" 2>/dev/null || true
   fi
 }
 trap cleanup EXIT
@@ -42,48 +41,27 @@ echo "[run-wpt] starting WPT server"
 ( cd "$WPT_DIR" && ./wpt serve ) >"$RESULTS_DIR/wpt-serve.log" 2>&1 &
 WPT_PID=$!
 
-echo "[run-wpt] starting Obscura CDP server on port $CDP_PORT"
-# The WPT server is reached as web-platform.test, which resolves to 127.0.0.1.
-# Obscura blocks loopback and private addresses by default (the SSRF gate), so
-# --allow-private-network is required or every navigation is refused.
-"$OBSCURA_BIN" serve --port "$CDP_PORT" --allow-private-network >"$RESULTS_DIR/obscura-serve.log" 2>&1 &
-OBSCURA_PID=$!
-
-# Wait for both servers, up to ~60s.
-echo "[run-wpt] waiting for WPT server and CDP server to come up"
+echo "[run-wpt] waiting for the WPT server to come up"
 ready=0
 for _ in $(seq 1 60); do
-  wpt_ok=0
-  cdp_ok=0
   if curl -fsS -o /dev/null "$WPT_URL" 2>/dev/null; then
-    wpt_ok=1
-  fi
-  if curl -fsS -o /dev/null "$CDP_VERSION_URL" 2>/dev/null; then
-    cdp_ok=1
-  fi
-  if [ "$wpt_ok" = "1" ] && [ "$cdp_ok" = "1" ]; then
     ready=1
     break
   fi
   if ! kill -0 "$WPT_PID" 2>/dev/null; then
-    echo "[run-wpt] error: WPT server exited early. see $RESULTS_DIR/wpt-serve.log" >&2
-    exit 1
-  fi
-  if ! kill -0 "$OBSCURA_PID" 2>/dev/null; then
-    echo "[run-wpt] error: Obscura server exited early. see $RESULTS_DIR/obscura-serve.log" >&2
+    echo "[run-wpt] error: WPT server exited early (port already in use?). see $RESULTS_DIR/wpt-serve.log" >&2
+    echo "[run-wpt] hint: leftover servers from a previous run hold the ports. clear them with: pkill -f serve.py" >&2
     exit 1
   fi
   sleep 1
 done
 
 if [ "$ready" != "1" ]; then
-  echo "[run-wpt] error: servers did not become ready within 60s" >&2
-  echo "[run-wpt] WPT log:     $RESULTS_DIR/wpt-serve.log" >&2
-  echo "[run-wpt] Obscura log: $RESULTS_DIR/obscura-serve.log" >&2
+  echo "[run-wpt] error: WPT server did not become ready within 60s. see $RESULTS_DIR/wpt-serve.log" >&2
   exit 1
 fi
 
-echo "[run-wpt] both servers are up"
+echo "[run-wpt] WPT server is up"
 
 echo "[run-wpt] building wpt-runner and triage"
 ( cd "$SCRIPT_DIR" && cargo build --release -p wpt-runner -p triage )
@@ -95,14 +73,13 @@ STAMP="$(date +%s)"
 RESULTS_JSON="$RESULTS_DIR/wpt-$STAMP.json"
 TRIAGE_MD="$RESULTS_DIR/triage.md"
 
-echo "[run-wpt] running tests"
-# Capture JSON for triage and machine use. The runner exits non-zero whenever any
-# subtest fails, which is the normal case for a partial-conformance engine, so do
-# not let `set -e` abort the run before triage gets to summarize it. Only a
-# missing or empty JSON file is a real failure.
-"$RUNNER" --json "$@" >"$RESULTS_JSON" || true
+echo "[run-wpt] running tests via the fetch backend (obscura bin: $OBSCURA_BIN)"
+# The runner exits non-zero whenever any subtest fails, which is the normal case
+# for a partial-conformance engine, so do not let `set -e` abort before triage.
+# Only a missing or empty JSON file is a real failure.
+"$RUNNER" --json --obscura-bin "$OBSCURA_BIN" "$@" >"$RESULTS_JSON" || true
 if [ ! -s "$RESULTS_JSON" ]; then
-  echo "[run-wpt] error: runner produced no output. see $RESULTS_DIR/obscura-serve.log" >&2
+  echo "[run-wpt] error: runner produced no output." >&2
   exit 1
 fi
 
@@ -111,5 +88,5 @@ echo "[run-wpt] generating triage report"
 
 echo ""
 echo "[run-wpt] done."
-echo "[run-wpt] results json: $RESULTS_JSON"
+echo "[run-wpt] results json:  $RESULTS_JSON"
 echo "[run-wpt] triage report: $TRIAGE_MD"

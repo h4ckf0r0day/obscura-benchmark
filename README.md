@@ -1,2 +1,2 @@
-# obscura-benchmark
+# Obscura Benchmark
 Obscura browser benchmark

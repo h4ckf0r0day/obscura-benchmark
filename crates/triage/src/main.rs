@@ -23,6 +23,9 @@ use anyhow::{Context, Result};
 use clap::{Parser, ValueEnum};
 use serde_json::Value;
 
+mod tiers;
+use tiers::{TierTotals, Tiers};
+
 #[derive(Parser)]
 #[command(
     name = "triage",
@@ -81,8 +84,10 @@ fn main() {
 }
 
 fn run(args: &Args) -> Result<()> {
+    let tier_rules = Tiers::load();
     let mut records: Vec<Record> = Vec::new();
     let mut totals = Totals::default();
+    let mut tier_totals = TierTotals::default();
 
     if args.inputs.is_empty() {
         let mut buf = String::new();
@@ -90,7 +95,7 @@ fn run(args: &Args) -> Result<()> {
             .read_to_string(&mut buf)
             .context("reading stdin")?;
         match parse_report(&buf) {
-            Ok(v) => ingest(&v, &mut records, &mut totals),
+            Ok(v) => ingest(&v, &mut records, &mut totals, &tier_rules, &mut tier_totals),
             Err(e) => eprintln!("triage: warning: skipping stdin: {e:#}"),
         }
     } else {
@@ -103,7 +108,7 @@ fn run(args: &Args) -> Result<()> {
                 }
             };
             match parse_report(&buf) {
-                Ok(v) => ingest(&v, &mut records, &mut totals),
+                Ok(v) => ingest(&v, &mut records, &mut totals, &tier_rules, &mut tier_totals),
                 Err(e) => {
                     eprintln!("triage: warning: skipping {}: {e:#}", input.display());
                     continue;
@@ -116,8 +121,8 @@ fn run(args: &Args) -> Result<()> {
     let by_area = area_breakdown(&records);
 
     match args.format {
-        Format::Markdown => print_markdown(&totals, &signatures, &by_area, args),
-        Format::Json => print_json(&totals, &signatures, &by_area, args),
+        Format::Markdown => print_markdown(&totals, &tier_totals, &signatures, &by_area, args),
+        Format::Json => print_json(&totals, &tier_totals, &signatures, &by_area, args),
     }
     Ok(())
 }
@@ -136,7 +141,13 @@ struct Totals {
     failing_subtests: usize,
 }
 
-fn ingest(report: &Value, records: &mut Vec<Record>, totals: &mut Totals) {
+fn ingest(
+    report: &Value,
+    records: &mut Vec<Record>,
+    totals: &mut Totals,
+    tier_rules: &Tiers,
+    tier_totals: &mut TierTotals,
+) {
     let results = report
         .get("results")
         .and_then(Value::as_array)
@@ -153,6 +164,14 @@ fn ingest(report: &Value, records: &mut Vec<Record>, totals: &mut Totals) {
         totals.files += 1;
         let path = res.get("path").and_then(Value::as_str).unwrap_or("<unknown>");
         let spec_area = first_segment(path);
+
+        // Conformance-tier accounting, using the runner's per-file pass/total/ok.
+        {
+            let pass = res.get("pass").and_then(Value::as_u64).unwrap_or(0) as usize;
+            let total = res.get("total").and_then(Value::as_u64).unwrap_or(0) as usize;
+            let ok = res.get("ok").and_then(Value::as_bool).unwrap_or(false);
+            tier_totals.record(tier_rules.tier_for(path), ok, pass, total);
+        }
 
         // First captured exception is usually the real root cause: an uncaught
         // throw makes every downstream assert fail with a generic message.
@@ -521,7 +540,13 @@ fn areas_string(sig: &Signature) -> String {
     sig.areas.keys().cloned().collect::<Vec<_>>().join(", ")
 }
 
-fn print_markdown(totals: &Totals, signatures: &[Signature], by_area: &[AreaStat], args: &Args) {
+fn print_markdown(
+    totals: &Totals,
+    tier_totals: &TierTotals,
+    signatures: &[Signature],
+    by_area: &[AreaStat],
+    args: &Args,
+) {
     let shown: Vec<&Signature> = signatures
         .iter()
         .filter(|s| s.count >= args.min_count)
@@ -533,6 +558,8 @@ fn print_markdown(totals: &Totals, signatures: &[Signature], by_area: &[AreaStat
         totals.files, totals.failing_files, totals.failing_subtests
     );
     println!();
+
+    print_tiers_md(tier_totals);
 
     println!("## Top error signatures");
     println!();
@@ -594,6 +621,43 @@ fn print_markdown(totals: &Totals, signatures: &[Signature], by_area: &[AreaStat
     }
 }
 
+/// Render the conformance-tier table. Core is the scraping/automation contract
+/// and the headline; Relevant is Core plus broader JS-observable correctness;
+/// Full is the whole run. Excluded and Other are shown for transparency only.
+/// See crates/triage/src/tiers.list for the (capability-based) definitions.
+fn print_tiers_md(t: &TierTotals) {
+    let core = t.core();
+    let relevant = t.relevant();
+    let full = t.full();
+    println!("## Conformance tiers");
+    println!();
+    println!("| tier | files ok | subtests pass | role |");
+    println!("| ---- | -------- | ------------- | ---- |");
+    let row = |name: &str, a: &tiers::TierAgg, role: &str| {
+        println!(
+            "| {} | {}/{} ({:.1}%) | {}/{} ({:.1}%) | {} |",
+            name,
+            a.files_ok,
+            a.files,
+            a.file_pct(),
+            a.pass,
+            a.total,
+            a.subtest_pct(),
+            role,
+        );
+    };
+    row("Core", &core, "headline + SLA");
+    row("Relevant", &relevant, "Core + broader correctness");
+    row("Full", &full, "whole suite (transparency)");
+    if t.excluded.files > 0 {
+        row("(excluded)", &t.excluded, "out of scope, no target");
+    }
+    if t.other.files > 0 {
+        row("(unclassified)", &t.other, "not yet tiered, extend manifest");
+    }
+    println!();
+}
+
 /// Sum signature counts per suspected subsystem, biggest first.
 fn fix_area_ranking(signatures: &[Signature]) -> Vec<(&'static str, usize)> {
     let mut map: BTreeMap<&'static str, usize> = BTreeMap::new();
@@ -611,7 +675,24 @@ fn md_cell(s: &str) -> String {
     s.replace('|', "\\|").replace('\n', " ")
 }
 
-fn print_json(totals: &Totals, signatures: &[Signature], by_area: &[AreaStat], args: &Args) {
+fn tier_json(a: &tiers::TierAgg) -> Value {
+    serde_json::json!({
+        "files": a.files,
+        "files_ok": a.files_ok,
+        "file_pct": (a.file_pct() * 10.0).round() / 10.0,
+        "subtest_pass": a.pass,
+        "subtest_total": a.total,
+        "subtest_pct": (a.subtest_pct() * 10.0).round() / 10.0,
+    })
+}
+
+fn print_json(
+    totals: &Totals,
+    tier_totals: &TierTotals,
+    signatures: &[Signature],
+    by_area: &[AreaStat],
+    args: &Args,
+) {
     let shown: Vec<&Signature> = signatures
         .iter()
         .filter(|s| s.count >= args.min_count)
@@ -654,6 +735,13 @@ fn print_json(totals: &Totals, signatures: &[Signature], by_area: &[AreaStat], a
             "files": totals.files,
             "failing_files": totals.failing_files,
             "failing_subtests": totals.failing_subtests,
+        },
+        "tiers": {
+            "core": tier_json(&tier_totals.core()),
+            "relevant": tier_json(&tier_totals.relevant()),
+            "full": tier_json(&tier_totals.full()),
+            "excluded": tier_json(&tier_totals.excluded),
+            "other": tier_json(&tier_totals.other),
         },
         "signatures": sigs_json,
         "by_area": by_area_json,

@@ -24,6 +24,8 @@ exclude css
 exclude editing
 exclude html/rendering
 exclude html/canvas
+exclude html/editing
+exclude html/interaction
 exclude html/semantics/embedded-content
 exclude html/semantics/popovers/popover-layout
 exclude mathml

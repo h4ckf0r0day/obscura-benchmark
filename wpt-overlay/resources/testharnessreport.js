@@ -27,6 +27,19 @@
   var consoleLines = [];
   var errorLines = [];
 
+  // Disable testharness's in-page results rendering. We read results only via
+  // add_completion_callback below, never the DOM results table. The table path
+  // (Tests.result -> notify_result -> output) throws on DOM APIs Obscura does
+  // not fully implement, and that exception aborts completion and strands the
+  // whole file with no result. wptrunner likewise runs with output off.
+  try {
+    if (typeof setup === "function") {
+      setup({ output: false });
+    }
+  } catch (e) {
+    // testharness not loaded yet, or setup missing; harmless.
+  }
+
   function clamp(s) {
     s = String(s);
     if (s.length > MAX_LEN) {

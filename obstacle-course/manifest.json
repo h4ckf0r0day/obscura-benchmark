@@ -1,0 +1,16 @@
+{
+  "description": "Obscura obstacle course: a curated set of modern-web pages that exercise capabilities a no-DOM-engine headless browser cannot handle (React, SPA routing, async render, custom elements), measuring both correctness (does the JS-rendered DOM match) and per-page latency.",
+  "wait_secs": 3,
+  "timeout_secs": 20,
+  "warmup": 1,
+  "runs": 5,
+  "stages": [
+    { "name": "static",        "file": "fixtures/static.html",        "check": "JSON.stringify(String(window.__obstacle||''))", "expect": "static:5:Static Page",            "desc": "baseline: HTML parse + querySelectorAll" },
+    { "name": "dom-build",     "file": "fixtures/dom-build.html",     "check": "JSON.stringify(String(window.__obstacle||''))", "expect": "rows:5000",                       "desc": "vanilla-JS DOM throughput (build 5000 rows)" },
+    { "name": "react",         "file": "fixtures/react-app.html",     "check": "JSON.stringify(String(window.__obstacle||''))", "expect": "react:100:Item 0",                "desc": "client-side React render (the Lightpanda-can't differentiator)" },
+    { "name": "async-render",  "file": "fixtures/async-render.html",  "check": "JSON.stringify(String(window.__obstacle||''))", "expect": "async:5:alpha",                   "desc": "fetch() same-origin JSON then render (async settle)" },
+    { "name": "spa-router",    "file": "fixtures/spa-router.html",    "check": "JSON.stringify(String(window.__obstacle||''))", "expect": "route:/products:Products Page",   "desc": "pushState client-side routing" },
+    { "name": "timers",        "file": "fixtures/timers.html",        "check": "JSON.stringify(String(window.__obstacle||''))", "expect": "timers:microtask,t1,t2:done",     "desc": "setTimeout chain + microtask (event-loop settle)" },
+    { "name": "web-component", "file": "fixtures/web-component.html", "check": "JSON.stringify(String(window.__obstacle||''))", "expect": "wc:2:Hello",                      "desc": "custom element + shadow DOM render" }
+  ]
+}

@@ -10,6 +10,10 @@
 # logs
 *.log
 
+# python bytecode cache
+__pycache__/
+*.pyc
+
 # editor noise
 *.swp
 *.swo

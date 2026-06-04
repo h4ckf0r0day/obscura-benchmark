@@ -1,0 +1,37 @@
+# Real-world page corpus for the obscura render-success benchmark.
+# One URL per line; blank lines and lines starting with # are ignored.
+# A mix of static sites, docs, news, and client-rendered SPAs. These are public
+# pages chosen to be reasonably stable; the live web changes, so the success
+# rate and timings will drift over time. Edit freely for your own workload.
+
+# static / docs
+https://example.com
+https://www.iana.org/domains/reserved
+https://en.wikipedia.org/wiki/Web_scraping
+https://developer.mozilla.org/en-US/docs/Web/HTML
+https://www.w3.org/
+https://docs.python.org/3/
+https://www.rust-lang.org/
+https://go.dev/
+https://nodejs.org/en
+https://httpbin.org/html
+
+# news / long-form
+https://news.ycombinator.com/
+https://www.bbc.com/news
+https://www.theguardian.com/international
+https://arxiv.org/
+
+# code hosting / registries
+https://github.com/rust-lang/rust
+https://pkg.go.dev/
+https://crates.io/
+https://pypi.org/
+
+# client-rendered SPAs (need real JS execution, not just static HTML)
+https://react.dev/
+https://vuejs.org/
+https://svelte.dev/
+https://angular.dev/
+https://www.solidjs.com/
+https://remix.run/

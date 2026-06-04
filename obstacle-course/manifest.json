@@ -26,7 +26,7 @@
       "file": "fixtures/react-app.html",
       "check": "JSON.stringify(String(window.__obstacle||''))",
       "expect": "react:100:Item 0",
-      "desc": "client-side React render (the Lightpanda-can't differentiator)",
+      "desc": "client-side React render (full client-side rendering, not just static HTML)",
       "category": "frameworks"
     },
     {

@@ -48,6 +48,87 @@
       "desc": "client-side Vue 3 render via createApp/mount (100-item list)"
     },
     {
+      "name": "ssr-hydrate",
+      "file": "fixtures/ssr-hydrate.html",
+      "category": "modern-web",
+      "type": "eval",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "hydrate:10:client:45",
+      "desc": "SSR hydration: server-rendered <ul> of 10 <li> ships in the initial HTML, then Preact hydrate() (../vendor/preact.umd.js) attaches client-side over the existing DOM. The hydrated component runs on the client and computes a checksum (sum of indices 0..9 = 45) the static HTML never contained, and marks the status node 'client', proving the client took over the pre-rendered markup."
+    },
+    {
+      "name": "es-modules",
+      "file": "fixtures/es-modules.html",
+      "category": "modern-web",
+      "type": "eval",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "esm:mod:10:55:10",
+      "desc": "ES modules / code-splitting: <script type=module> statically imports ../modules/util.js (PREFIX + sum(range(5))=10) and does a runtime dynamic import() of ../modules/lazy.js, a code-split chunk that itself imports util.js (lazy.fib(10)=55, lazy.total([0..4])=10). Proves obscura runs module scripts, resolves nested static+dynamic module graphs, and settles on the async chunk load."
+    },
+    {
+      "name": "observer-intersection",
+      "file": "fixtures/observer-intersection.html",
+      "category": "modern-web",
+      "type": "eval",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "io:50",
+      "desc": "infinite-scroll/lazy-load: IntersectionObserver on a sentinel fires the callback, appends batches of 10 until 50 items are loaded, then disconnects and reports the total card count"
+    },
+    {
+      "name": "observer-mutation",
+      "file": "fixtures/observer-mutation.html",
+      "category": "modern-web",
+      "type": "eval",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "mo:3:3:3",
+      "desc": "MutationObserver childList: observing a container, appending 3 children delivers 3 mutation records (3 added nodes total, 3 children), recorded in the MO callback"
+    },
+    {
+      "name": "storage-roundtrip",
+      "file": "fixtures/storage-roundtrip.html",
+      "category": "modern-web",
+      "type": "eval",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "storage:local-value:session-value:1:1",
+      "desc": "Web Storage round-trip: setItem to localStorage and sessionStorage, read both back, and report values plus each store's length (1 each)"
+    },
+    {
+      "name": "raf-update",
+      "file": "fixtures/raf-update.html",
+      "category": "modern-web",
+      "type": "eval",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "raf:2:frame 2",
+      "desc": "requestAnimationFrame-driven DOM update: a 2-frame rAF chain advances a counter and writes the final value into the DOM after the frames run"
+    },
+    {
+      "name": "modern-js-lang",
+      "file": "fixtures/modern-js-lang.html",
+      "category": "modern-web",
+      "type": "eval",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "lang|opt=localhost:8080|dst=adspanbox|spr=1234/3|tpl=42|col=3:3|big=9007199254741001|fm=1,-1,2,-2,3,-3:-3|fe=3",
+      "desc": "modern ES language surface in one assert: optional chaining (?.) + nullish coalescing (??), array/object destructuring with defaults, array+object spread, template literals, Map/Set, BigInt arithmetic past Number.MAX_SAFE_INTEGER, Array.flatMap, Array.prototype.at(-1), and Object.fromEntries"
+    },
+    {
+      "name": "modern-js-platform",
+      "file": "fixtures/modern-js-platform.html",
+      "category": "modern-web",
+      "type": "eval",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "platform|settled=fulfilled,rejected,fulfilled|any=first|clone=2/3|abort=false/true|codec=ok:12|uuid=v4|sha256=ba7816bf8f01",
+      "desc": "modern platform APIs via top-level async/await: Promise.allSettled (mixed fulfil/reject), Promise.any (first winner), structuredClone deep-copy independence, AbortController + AbortSignal.aborted state flip, TextEncoder/TextDecoder UTF-8 round-trip of multi-byte chars (12 bytes), crypto.randomUUID v4 shape, and async crypto.subtle.digest SHA-256 of \"abc\" (known-answer ba7816bf8f01)"
+    },
+    {
+      "name": "spa-mini-app",
+      "file": "fixtures/spa-mini-app.html",
+      "category": "modern-web",
+      "type": "eval",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "spa:/article/data-fetching:Data Fetching:4",
+      "desc": "composite SPA: same-origin fetch() of a JSON dataset, a pushState client-side router, a Preact list view then a detail view after navigating to /article/<slug>, with a shared store (list count + selection) persisted across the client-side navigation"
+    },
+    {
       "name": "async-render",
       "file": "fixtures/async-render.html",
       "check": "JSON.stringify(String(window.__obstacle||''))",

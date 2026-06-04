@@ -52,6 +52,19 @@ Grouped by the obscura feature they exercise (every stage is also timed):
 | preact | Preact `h()`/`render()` |
 | vue | Vue 3 `createApp`/`mount` |
 
+**modern-web** — the patterns real production sites depend on
+| stage | exercises |
+| ----- | --------- |
+| ssr-hydrate | server-rendered markup + client hydration (Preact `hydrate()`) |
+| es-modules | `<script type=module>` static import + dynamic `import()` code-split graph |
+| observer-intersection | IntersectionObserver infinite-scroll / lazy-load |
+| observer-mutation | MutationObserver childList records |
+| storage-roundtrip | `localStorage` + `sessionStorage` round-trip |
+| raf-update | `requestAnimationFrame` chained DOM update |
+| modern-js-lang | optional chaining/nullish, destructuring/spread, `Map`/`Set`, `BigInt`, `flatMap`/`at`, `Object.fromEntries` |
+| modern-js-platform | `Promise.allSettled`/`any`, `structuredClone`, `AbortController`, `TextEncoder`/`Decoder`, `crypto.randomUUID`/`subtle.digest` |
+| spa-mini-app | composite: `fetch()` + pushState router + shared store + list→detail render |
+
 **capability**
 | stage | exercises |
 | ----- | --------- |

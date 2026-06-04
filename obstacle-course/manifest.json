@@ -1,16 +1,247 @@
 {
-  "description": "Obscura obstacle course: a curated set of modern-web pages that exercise capabilities a no-DOM-engine headless browser cannot handle (React, SPA routing, async render, custom elements), measuring both correctness (does the JS-rendered DOM match) and per-page latency.",
+  "description": "Obscura obstacle course: a feature + speed showcase. Stages span frameworks (React/Preact/Vue), capability (async render, SPA routing, timers), the web-API surface (URL/TextDecoder/FileAPI/Range/Selection/custom elements/dialog/input), extraction (--dump text/markdown/links/html), and scraping/stealth (fingerprint/cookies/charset decoding). Each asserts the JS-rendered DOM or CLI output matches an expected value and records per-page latency; the runner exits non-zero on any mismatch.",
   "wait_secs": 3,
   "timeout_secs": 20,
   "warmup": 1,
   "runs": 5,
   "stages": [
-    { "name": "static",        "file": "fixtures/static.html",        "check": "JSON.stringify(String(window.__obstacle||''))", "expect": "static:5:Static Page",            "desc": "baseline: HTML parse + querySelectorAll" },
-    { "name": "dom-build",     "file": "fixtures/dom-build.html",     "check": "JSON.stringify(String(window.__obstacle||''))", "expect": "rows:5000",                       "desc": "vanilla-JS DOM throughput (build 5000 rows)" },
-    { "name": "react",         "file": "fixtures/react-app.html",     "check": "JSON.stringify(String(window.__obstacle||''))", "expect": "react:100:Item 0",                "desc": "client-side React render (the Lightpanda-can't differentiator)" },
-    { "name": "async-render",  "file": "fixtures/async-render.html",  "check": "JSON.stringify(String(window.__obstacle||''))", "expect": "async:5:alpha",                   "desc": "fetch() same-origin JSON then render (async settle)" },
-    { "name": "spa-router",    "file": "fixtures/spa-router.html",    "check": "JSON.stringify(String(window.__obstacle||''))", "expect": "route:/products:Products Page",   "desc": "pushState client-side routing" },
-    { "name": "timers",        "file": "fixtures/timers.html",        "check": "JSON.stringify(String(window.__obstacle||''))", "expect": "timers:microtask,t1,t2:done",     "desc": "setTimeout chain + microtask (event-loop settle)" },
-    { "name": "web-component", "file": "fixtures/web-component.html", "check": "JSON.stringify(String(window.__obstacle||''))", "expect": "wc:2:Hello",                      "desc": "custom element + shadow DOM render" }
+    {
+      "name": "static",
+      "file": "fixtures/static.html",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "static:5:Static Page",
+      "desc": "baseline: HTML parse + querySelectorAll",
+      "category": "baseline"
+    },
+    {
+      "name": "dom-build",
+      "file": "fixtures/dom-build.html",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "rows:5000",
+      "desc": "vanilla-JS DOM throughput (build 5000 rows)",
+      "category": "perf"
+    },
+    {
+      "name": "react",
+      "file": "fixtures/react-app.html",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "react:100:Item 0",
+      "desc": "client-side React render (the Lightpanda-can't differentiator)",
+      "category": "frameworks"
+    },
+    {
+      "name": "preact",
+      "file": "fixtures/preact-app.html",
+      "category": "frameworks",
+      "type": "eval",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "preact:100:Item 0",
+      "desc": "client-side Preact render via h()/render() (100-item list)"
+    },
+    {
+      "name": "vue",
+      "file": "fixtures/vue-app.html",
+      "category": "frameworks",
+      "type": "eval",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "vue:100:Item 0",
+      "desc": "client-side Vue 3 render via createApp/mount (100-item list)"
+    },
+    {
+      "name": "async-render",
+      "file": "fixtures/async-render.html",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "async:5:alpha",
+      "desc": "fetch() same-origin JSON then render (async settle)",
+      "category": "capability"
+    },
+    {
+      "name": "spa-router",
+      "file": "fixtures/spa-router.html",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "route:/products:Products Page",
+      "desc": "pushState client-side routing",
+      "category": "capability"
+    },
+    {
+      "name": "timers",
+      "file": "fixtures/timers.html",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "timers:microtask,t1,t2:done",
+      "desc": "setTimeout chain + microtask (event-loop settle)",
+      "category": "capability"
+    },
+    {
+      "name": "web-component",
+      "file": "fixtures/web-component.html",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "wc:2:Hello",
+      "desc": "custom element + shadow DOM render",
+      "category": "web-api"
+    },
+    {
+      "name": "url",
+      "file": "fixtures/webapi-url.html",
+      "category": "web-api",
+      "type": "eval",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "url:https::u:p:h.test:8:h.test:8:/a:?x=1:#y",
+      "desc": "WHATWG URL parser: decompose https://u:p@h.test:8/a?x=1#y into protocol/username/password/hostname/port/host/pathname/search/hash"
+    },
+    {
+      "name": "textdecoder",
+      "file": "fixtures/webapi-textdecoder.html",
+      "category": "web-api",
+      "type": "eval",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "td:\u3042",
+      "desc": "TextDecoder legacy charset: new TextDecoder('shift_jis').decode([0x82,0xA0]) yields the Japanese hiragana \u3042 via the Encoding Standard index tables"
+    },
+    {
+      "name": "fileapi",
+      "file": "fixtures/webapi-fileapi.html",
+      "category": "web-api",
+      "type": "eval",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "file:18:obstacle blob text",
+      "desc": "File API: Blob construction (size 18) plus async FileReader.readAsText load event returning the concatenated blob text"
+    },
+    {
+      "name": "range",
+      "file": "fixtures/webapi-range.html",
+      "category": "web-api",
+      "type": "eval",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "range:0:3:AlphaBetaGamma",
+      "desc": "Range: createRange + selectNodeContents over a 3-child container, toString walks the subtree (offsets 0..3)"
+    },
+    {
+      "name": "selection",
+      "file": "fixtures/webapi-selection.html",
+      "category": "web-api",
+      "type": "eval",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "sel:1:onetwothree",
+      "desc": "Selection: getSelection().selectAllChildren produces one range and toString returns the container's text"
+    },
+    {
+      "name": "custom-element",
+      "file": "fixtures/webapi-custom-element.html",
+      "category": "web-api",
+      "type": "eval",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "ce:widget-ready",
+      "desc": "Custom element: customElements.define upgrades the connected element and connectedCallback sets its content"
+    },
+    {
+      "name": "dialog",
+      "file": "fixtures/webapi-dialog.html",
+      "category": "web-api",
+      "type": "eval",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "dialog:true:false:confirmed",
+      "desc": "HTMLDialogElement: showModal sets open=true, close('confirmed') clears open and sets returnValue"
+    },
+    {
+      "name": "input-step",
+      "file": "fixtures/webapi-input-step.html",
+      "category": "web-api",
+      "type": "eval",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "step:10:25:25",
+      "desc": "HTMLInputElement number: valueAsNumber reads 10, stepUp(3) advances by 3*step(5) to 25 and reflects into value"
+    },
+    {
+      "name": "extract-article",
+      "file": "fixtures/extract-article.html",
+      "category": "extraction",
+      "type": "dump",
+      "mode": "text",
+      "expect_contains": [
+        "Headless Browsing for Reliable Scraping",
+        "Obscura runs real JavaScript so the extracted DOM matches what a user would see.",
+        "Readability extraction keeps the main article body and discards surrounding chrome."
+      ],
+      "expect_excludes": [
+        "Sign in to your account",
+        "subscribe to our newsletter",
+        "Related links and advertising",
+        "All rights reserved"
+      ],
+      "desc": "--dump text readability extraction: keeps the <article> body, strips <nav>/<header>/<aside>/<footer> boilerplate"
+    },
+    {
+      "name": "extract-markdown",
+      "file": "fixtures/extract-markdown.html",
+      "category": "extraction",
+      "type": "dump",
+      "mode": "markdown",
+      "expect_contains": [
+        "# Markdown Extraction Demo",
+        "## Supported Constructs",
+        "- Headings of multiple levels",
+        "](https://github.com/h4ckf0r0day/obscura)",
+        "```"
+      ],
+      "expect_excludes": [],
+      "desc": "--dump markdown: headings (# / ##), list bullets (- ), link syntax ](url), and fenced code blocks"
+    },
+    {
+      "name": "extract-links",
+      "file": "fixtures/extract-links.html",
+      "category": "extraction",
+      "type": "dump",
+      "mode": "links",
+      "expect_contains": [
+        "https://example.com/docs",
+        "https://example.com/pricing",
+        "https://example.org/blog/post-1",
+        "https://news.example.net/article?id=42"
+      ],
+      "expect_excludes": [],
+      "desc": "--dump links: harvests every anchor href from the rendered page"
+    },
+    {
+      "name": "extract-html",
+      "file": "fixtures/extract-html.html",
+      "category": "extraction",
+      "type": "dump",
+      "mode": "html",
+      "expect_contains": [
+        "<section id=\"content\"",
+        "<table>",
+        "<th>Key</th>",
+        "<p id=\"injected\">Injected after load via script.</p>"
+      ],
+      "expect_excludes": [],
+      "desc": "--dump html: serializes the live DOM including a JS-injected element to prove rendered state is captured"
+    },
+    {
+      "name": "fingerprint",
+      "file": "fixtures/fingerprint.html",
+      "category": "scraping",
+      "type": "eval",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "fp:chrome=1:wdclean=1:plat=Linux x86_64:lang=en-US:tz=Europe/Berlin",
+      "desc": "stealth fingerprint: navigator.userAgent reads as Chrome, navigator.webdriver is not advertised (undefined/false), and platform/language/timezone are populated and consistent"
+    },
+    {
+      "name": "cookies",
+      "file": "fixtures/cookies.html",
+      "category": "scraping",
+      "type": "eval",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "cookie:k=v:session=abc123",
+      "desc": "document.cookie round-trip: cookies written from JS are read back from a real cookie jar"
+    },
+    {
+      "name": "charset-shiftjis",
+      "file": "fixtures/charset-shiftjis.html",
+      "category": "scraping",
+      "type": "eval",
+      "check": "JSON.stringify(String(window.__obstacle||''))",
+      "expect": "sjis:\u3053\u3093\u306b\u3061\u306f\u4e16\u754c",
+      "desc": "charset meta-sniff: page stored as raw Shift_JIS bytes with <meta charset=shift_jis>; obscura decodes the body to correct Japanese text"
+    }
   ]
 }

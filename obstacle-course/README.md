@@ -37,15 +37,55 @@ obscura blocks private/loopback addresses by default, so the runner passes
 
 ## Stages
 
+Grouped by the obscura feature they exercise (every stage is also timed):
+
+**baseline / perf**
 | stage | exercises |
 | ----- | --------- |
 | static | baseline HTML parse + `querySelectorAll` |
 | dom-build | vanilla-JS DOM throughput (build 5000 rows) |
-| react | client-side React render (reads the resulting `<li>`s) |
+
+**frameworks** — client-side rendering a no-DOM-engine browser can't do
+| stage | exercises |
+| ----- | --------- |
+| react | React 18 client render (reads the resulting `<li>`s) |
+| preact | Preact `h()`/`render()` |
+| vue | Vue 3 `createApp`/`mount` |
+
+**capability**
+| stage | exercises |
+| ----- | --------- |
 | async-render | `fetch()` a same-origin JSON resource, then render |
 | spa-router | `history.pushState` client-side routing |
 | timers | `setTimeout` chain + microtask (event-loop settle) |
+
+**web-api** — the JS/DOM surface obscura implements
+| stage | exercises |
+| ----- | --------- |
 | web-component | custom element + shadow DOM render |
+| url | WHATWG `URL` decomposition |
+| textdecoder | `TextDecoder` legacy charset (Shift_JIS → あ) |
+| fileapi | `Blob` + `FileReader.readAsText` |
+| range | `Range` selectNodeContents + stringify |
+| selection | `Selection.selectAllChildren` |
+| custom-element | `customElements.define` + upgrade + `connectedCallback` |
+| dialog | `HTMLDialogElement` showModal/close/returnValue |
+| input-step | `<input type=number>` `valueAsNumber`/`stepUp` |
+
+**extraction** — the `--dump` CLI modes
+| stage | exercises |
+| ----- | --------- |
+| extract-article | `--dump text` readability (keeps article, strips nav/footer) |
+| extract-markdown | `--dump markdown` (headings, lists, links, code) |
+| extract-links | `--dump links` (anchor harvesting) |
+| extract-html | `--dump html` (serializes the live, JS-mutated DOM) |
+
+**scraping** — engine/stealth features
+| stage | exercises |
+| ----- | --------- |
+| fingerprint | `navigator.userAgent`/`webdriver`/`platform`/timezone consistency |
+| cookies | `document.cookie` round-trip through the cookie jar |
+| charset-shiftjis | raw Shift_JIS bytes + `<meta charset>` decoded correctly |
 
 ## Adding a stage
 

@@ -303,7 +303,7 @@
       "category": "scraping",
       "type": "eval",
       "check": "JSON.stringify(String(window.__obstacle||''))",
-      "expect": "fp:chrome=1:wdclean=1:plat=Linux x86_64:lang=en-US:tz=Europe/Berlin",
+      "expect": "fp:chrome=1:wdclean=1:plat=Win32:lang=en-US:tz=Europe/Berlin",
       "desc": "stealth fingerprint: navigator.userAgent reads as Chrome, navigator.webdriver is not advertised (undefined/false), and platform/language/timezone are populated and consistent"
     },
     {

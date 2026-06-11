@@ -16,6 +16,7 @@ resulting DOM, and how fast and how cheaply does it do that.
 | Obstacle course | does it handle the modern web (React/SPA/async/web APIs), and how fast | `obstacle-course/` |
 | vs headless Chrome | how does its speed and memory compare to the standard headless engine | `compare/` |
 | Real-world corpus | does it render real public pages, including SPAs | `realworld/` |
+| Stealth bench | does it present a consistent, undetectable Chrome fingerprint | `stealth-bench/` |
 | Perf bench | per-page `fetch` / `scrape` latency on a small URL set | `crates/perf-bench` |
 | Reliability | does it crash, panic, or hang on a large corpus of real pages | `reliability/` |
 
@@ -193,7 +194,17 @@ latency, and memory. See `realworld/README.md`.
 OBSCURA_BIN=/path/to/obscura scripts/run-realworld.sh
 ```
 
-## 5. Perf bench
+## 5. Stealth bench
+
+`stealth-bench/` evaluates Obscura's browser fingerprint, anti-detection measures,
+and cross-page consistency when running in `--stealth` mode. It runs locally
+and does not require external network access.
+
+```sh
+OBSCURA_BIN=/path/to/obscura-stealth python3 stealth-bench/run.py --stealth
+```
+
+## 6. Perf bench
 
 `crates/perf-bench` times `obscura fetch` / `obscura scrape` on a small default
 URL set (override by passing URLs).
@@ -213,6 +224,7 @@ crates/
 obstacle-course/   modern-web capability + speed fixtures (+ run.py, manifest.json)
 compare/           obscura vs headless Chrome: head-to-head.py, scale.py
 realworld/         live-page render-success corpus: sites.txt, run.py
+stealth-bench/     stealth fingerprint, anti-detection, and consistency test suite
 wpt-overlay/       the custom WPT report script installed into the WPT checkout
 scripts/           setup and run wrappers
 results/           generated run artifacts (gitignored)

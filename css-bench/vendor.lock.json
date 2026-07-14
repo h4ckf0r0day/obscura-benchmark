@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "artifacts": [
+    {
+      "name": "bootstrap",
+      "version": "5.3.8",
+      "license": "MIT",
+      "source": "https://github.com/twbs/bootstrap/tree/v5.3.8/dist/css",
+      "url": "https://raw.githubusercontent.com/twbs/bootstrap/v5.3.8/dist/css/bootstrap.css",
+      "license_url": "https://raw.githubusercontent.com/twbs/bootstrap/v5.3.8/LICENSE",
+      "path": "vendor/bootstrap/bootstrap.css",
+      "license_path": "vendor/bootstrap/LICENSE",
+      "bytes": 280311,
+      "sha256": "4a50207b956a4ab943640ee993118b554a34e96a23261cfe58b9aa1807a7849b"
+    },
+    {
+      "name": "bulma-website",
+      "version": "1.0.4",
+      "license": "MIT",
+      "source": "https://github.com/jgthms/bulma/blob/1.0.4/docs/assets/css/website.css",
+      "url": "https://raw.githubusercontent.com/jgthms/bulma/1.0.4/docs/assets/css/website.css",
+      "license_url": "https://raw.githubusercontent.com/jgthms/bulma/1.0.4/LICENSE",
+      "path": "vendor/bulma/website.css",
+      "license_path": "vendor/bulma/LICENSE",
+      "bytes": 1430123,
+      "sha256": "f65525d81189eb20a2453738dd1157c469c12b549550e4dd19a185c11c38ac89"
+    },
+    {
+      "name": "primer",
+      "version": "22.3.0",
+      "license": "MIT",
+      "source": "https://github.com/primer/css/releases/tag/v22.3.0",
+      "url": "https://registry.npmjs.org/@primer/css/-/css-22.3.0.tgz",
+      "archive_member": "package/dist/primer.css",
+      "license_url": "https://raw.githubusercontent.com/primer/css/v22.3.0/LICENSE",
+      "path": "vendor/primer/primer.css",
+      "license_path": "vendor/primer/LICENSE",
+      "bytes": 1061415,
+      "sha256": "e3370a492f38f957304ddf6a21e1f78696e57b03c56fca22658742eb25f7a114"
+    },
+    {
+      "name": "patternfly",
+      "version": "6.6.0",
+      "license": "MIT",
+      "source": "https://github.com/patternfly/patternfly/releases/tag/v6.6.0",
+      "url": "https://registry.npmjs.org/@patternfly/patternfly/-/patternfly-6.6.0.tgz",
+      "archive_member": "package/patternfly.css",
+      "license_url": "https://raw.githubusercontent.com/patternfly/patternfly/v6.6.0/LICENSE.txt",
+      "path": "vendor/patternfly/patternfly.css",
+      "license_path": "vendor/patternfly/LICENSE",
+      "bytes": 1993226,
+      "sha256": "efdb419b11d132fd1e1cf677bb21e85319dd1b5fe5fb9766805f1bfd28b5954a"
+    }
+  ]
+}

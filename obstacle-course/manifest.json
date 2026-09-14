@@ -72,7 +72,7 @@
       "type": "eval",
       "check": "JSON.stringify(String(window.__obstacle||''))",
       "expect": "io:50",
-      "desc": "infinite-scroll/lazy-load: IntersectionObserver on a sentinel fires the callback, appends batches of 10 until 50 items are loaded, then disconnects and reports the total card count"
+      "desc": "infinite-scroll/lazy-load: IntersectionObserver fires for each newly observed sentinel, appends batches of 10 until 50 items are loaded, then disconnects and reports the total card count"
     },
     {
       "name": "observer-mutation",

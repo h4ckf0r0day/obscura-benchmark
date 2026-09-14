@@ -34,6 +34,12 @@
             if (loaded >= MAX) {
               io.disconnect();
               window.__obstacle = 'io:' + feed.querySelectorAll('.card').length;
+            } else {
+              var oldSentinel = entries[i].target;
+              var nextSentinel = oldSentinel.cloneNode(false);
+              io.unobserve(oldSentinel);
+              oldSentinel.replaceWith(nextSentinel);
+              io.observe(nextSentinel);
             }
           }
         }

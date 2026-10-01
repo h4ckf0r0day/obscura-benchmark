@@ -6,10 +6,15 @@
   <div id="sentinel"></div>
   <!-- Infinite-scroll / lazy-load pattern: an IntersectionObserver watches a
        sentinel at the end of the feed. Each time the sentinel intersects the
-       viewport, a batch of items is appended and a new sentinel observed. This
+       viewport, a batch of items is appended, the page scrolls to the new end
+       of the feed (as a reader would) and the sentinel is observed again. This
        is the core Next.js / React feed loading pattern. Headless tools without a
        real layout/observer pipeline never fire the callback and load 0 items.
-       obscura treats observed targets as intersecting so the callback fires. -->
+       With real geometry the scroll is required: once the feed is taller than
+       the viewport, the sentinel would otherwise sit below the fold. The
+       re-observe is required too: IntersectionObserver only reports changes,
+       and a sentinel that stays visible produces no new entry, while a fresh
+       observe() always reports the target's current state. -->
   <script>
     (function () {
       var feed = document.getElementById('feed');
@@ -34,6 +39,10 @@
             if (loaded >= MAX) {
               io.disconnect();
               window.__obstacle = 'io:' + feed.querySelectorAll('.card').length;
+            } else {
+              window.scrollTo(0, document.documentElement.scrollHeight);
+              io.unobserve(entries[i].target);
+              io.observe(entries[i].target);
             }
           }
         }

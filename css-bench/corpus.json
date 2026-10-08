@@ -1,0 +1,40 @@
+{
+  "cases": [
+    {
+      "name": "bootstrap",
+      "asset": "vendor/bootstrap/bootstrap.css",
+      "element": "div",
+      "classes": "d-flex",
+      "expect_display": "flex",
+      "rules": 2664,
+      "bytes": 280311
+    },
+    {
+      "name": "bulma-website",
+      "asset": "vendor/bulma/website.css",
+      "element": "button",
+      "classes": "button is-primary",
+      "expect_display": "inline-flex",
+      "rules": 6724,
+      "bytes": 1430123
+    },
+    {
+      "name": "primer",
+      "asset": "vendor/primer/primer.css",
+      "element": "div",
+      "classes": "d-flex",
+      "expect_display": "flex",
+      "rules": 3231,
+      "bytes": 1061415
+    },
+    {
+      "name": "patternfly",
+      "asset": "vendor/patternfly/patternfly.css",
+      "element": "button",
+      "classes": "pf-v6-c-button pf-m-primary",
+      "expect_display": "inline-flex",
+      "rules": 6749,
+      "bytes": 1993226
+    }
+  ]
+}

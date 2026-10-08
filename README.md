@@ -17,6 +17,7 @@ repository, where changes can be reviewed against engine-owned expectations.
 | Real-world corpus | does it render real public pages, including SPAs | `realworld/` |
 | Stealth bench | does it present a consistent, undetectable Chrome fingerprint | `stealth-bench/` |
 | Perf bench | per-page `fetch` / `scrape` latency on a small URL set | `crates/perf-bench` |
+| CSS processing | does lightweight CSS computation survive production bundles, and what does compute vs drop cost | `css-bench/` |
 | Reliability | does it crash, panic, or hang on a large corpus of real pages | `reliability/` |
 
 ## Results
